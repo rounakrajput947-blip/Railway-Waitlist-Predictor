@@ -9,7 +9,7 @@ To solve this and build a realistic predictor, I engineered a **Synthetic Churn 
 
 ## 📊 Key Results
 * **Algorithm:** XGBoost Classifier
-* **Performance:** [Insert your accuracy here]% Accuracy
+* **Performance:** 94% Accuracy
 * **Feature Engineering:** Implemented high-cardinality filters and temporal feature extraction.
 
 ## 🔍 Feature Importance
