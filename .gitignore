@@ -1,0 +1,9 @@
+# Ignore Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Ignore the data folder (Best practice: don't push datasets to GitHub)
+data/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
