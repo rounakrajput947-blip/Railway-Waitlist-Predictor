@@ -1,44 +1,55 @@
 import streamlit as st
 import pandas as pd
+import pickle
 from xgboost import XGBClassifier
 
-# Set up the web page
 st.set_page_config(page_title="Railway Waitlist Predictor", page_icon="🚆")
-st.title("🚆 Train Ticket Waitlist Predictor")
-st.write("Built by Rounak Rajput (IIT Patna)")
-st.write("Enter your ticket details below to see your chances of clearing the waitlist!")
+st.title("🚆 Pro Train Ticket Predictor")
 
-# Load the AI Brain
+# Load the AI Brain and the Translators
 @st.cache_resource
-def load_model():
+def load_assets():
     model = XGBClassifier()
     model.load_model("model.json")
-    return model
+    
+    with open("encoders.pkl", "rb") as f:
+        encoders = pickle.load(f)
+        
+    return model, encoders
 
-model = load_model()
+model, encoders = load_assets()
 
-# User Interface: Sliders and Inputs
+# User Interface: Dynamic Dropdowns based on actual data
 col1, col2 = st.columns(2)
 with col1:
-    wl_pos = st.number_input("Waitlist Position (e.g., 15)", min_value=1, max_value=500, value=15)
-with col2:
-    days_left = st.slider("Days to Departure", min_value=1, max_value=120, value=30)
-
-# The Prediction Engine
-if st.button("Predict Confirmation Probability"):
-    # Format the data exactly how the model expects it
-    input_data = pd.DataFrame({'Waitlist Position': [wl_pos], 'Days_to_Departure': [days_left]})
+    wl_pos = st.number_input("Waitlist Position", min_value=1, value=15)
+    source = st.selectbox("Source Station", encoders['Source Station'].classes_)
+    quota = st.selectbox("Quota", encoders['Quota'].classes_)
     
-    # Get the probability (returns a percentage)
+with col2:
+    days_left = st.slider("Days to Departure", 1, 120, 30)
+    dest = st.selectbox("Destination Station", encoders['Destination Station'].classes_)
+    travel_class = st.selectbox("Class of Travel", encoders['Class of Travel'].classes_)
+
+if st.button("Predict Confirmation Probability"):
+    # Translate the user's text inputs into math using our saved encoders
+    input_data = pd.DataFrame({
+        'Waitlist Position': [wl_pos],
+        'Days_to_Departure': [days_left],
+        'Quota': [encoders['Quota'].transform([quota])[0]],
+        'Class of Travel': [encoders['Class of Travel'].transform([travel_class])[0]],
+        'Source Station': [encoders['Source Station'].transform([source])[0]],
+        'Destination Station': [encoders['Destination Station'].transform([dest])[0]]
+    })
+    
+    # Predict
     probability = model.predict_proba(input_data)[0][1] * 100
     
     st.subheader(f"Chance of Clearing: {probability:.1f}%")
-    
-    # Show dynamic feedback
     if probability > 75:
-        st.success("Looking great! You have a high chance of getting a confirmed seat.")
+        st.success("High chance of confirmed seat.")
         st.balloons()
     elif probability > 40:
-        st.warning("It's a coin toss. You might want to monitor this closely.")
+        st.warning("Coin toss. Monitor closely.")
     else:
-        st.error("Low probability. Definitely look into booking a backup ticket!")
+        st.error("Low probability. Book a backup!")
